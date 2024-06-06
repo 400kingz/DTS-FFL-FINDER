@@ -1,10 +1,14 @@
 jQuery(document).ready(function($) {
     // Initialize Google Map
     function initMap(dealers) {
-        var map = new google.maps.Map(document.getElementById('ffl-dealer-map'), {
+        try {
+            var map = new google.maps.Map(document.getElementById('ffl-dealer-map'), {
             zoom: 4,
             center: {lat: 39.8283, lng: -98.5795} // Center of the USA
-        });
+            });
+        } catch (error) {
+            console.error('Error initializing Google Map:', error);
+        }
 
         // Add markers for each FFL dealer
         dealers.forEach(function(dealer) {

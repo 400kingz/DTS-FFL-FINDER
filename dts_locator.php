@@ -7,6 +7,7 @@ Author: Zain Omran
 */
 
 ini_set('memory_limit', '512M');
+define('FFL_GEOCODE_CACHE', plugin_dir_path(__FILE__) . 'geocode_cache.json');
 
 // Enqueue Google Maps API and custom scripts
 function enqueue_ffl_selector_scripts() {
@@ -20,7 +21,7 @@ add_action('wp_enqueue_scripts', 'enqueue_ffl_selector_scripts');
 function add_ffl_dealer_field($checkout) {
     echo '<div id="ffl_dealer_field"><h2>' . __('Select FFL Dealer') . '</h2>';
     echo '<label for="ffl_zipcode">' . __('Enter ZIP Code') . '</label>';
-    echo '<input type="text" id="ffl_zipcode" name="ffl_zipcode" placeholder="ZIP Code" />';
+    echo '<input type="text" id="ffl_zipcode" name="ffl_zipcode" placeholder="ZIP Code" pattern="\d{5}" title="Enter a valid ZIP Code" required />';
     echo '<label for="ffl_radius">' . __('Select Radius') . '</label>';
     echo '<select id="ffl_radius" name="ffl_radius">';
     echo '<option value="10">10 miles</option>';
@@ -36,7 +37,7 @@ add_action('woocommerce_after_order_notes', 'add_ffl_dealer_field');
 
 // Validate FFL dealer field
 function validate_ffl_dealer_field() {
-    if (empty($_POST['ffl_dealer'])) {
+    if (empty($_POST['ffl_dealer']) || !preg_match('/^\d{5}$/', $_POST['ffl_zipcode'])) {
         wc_add_notice(__('Please select an FFL dealer.'), 'error');
     }
 }
@@ -81,6 +82,11 @@ function geocode_zipcode($zipcode) {
     $api_key = 'AIzaSyAho6VTU5slTT2E3Ur-deTtaS36Frct9FE'; // Replace with your Google Maps API key
     $url = "https://maps.googleapis.com/maps/api/geocode/json?address={$zipcode}&key={$api_key}";
 
+    $cache = json_decode(file_get_contents(FFL_GEOCODE_CACHE), true) ?: [];
+    if (isset($cache[$zipcode])) {
+        return $cache[$zipcode];
+    }
+
     $response = wp_remote_get($url);
     if (is_wp_error($response)) {
         return false;
@@ -91,7 +97,10 @@ function geocode_zipcode($zipcode) {
 
     if ($data->status === 'OK') {
         $location = $data->results[0]->geometry->location;
-        return array('latitude' => $location->lat, 'longitude' => $location->lng);
+        $geocode = array('latitude' => $location->lat, 'longitude' => $location->lng);
+        $cache[$zipcode] = $geocode;
+        file_put_contents(FFL_GEOCODE_CACHE, json_encode($cache));
+        return $geocode;
     }
 
     return false;
@@ -99,7 +108,12 @@ function geocode_zipcode($zipcode) {
 
 // Add FFL dealers to the map
 function add_ffl_dealers_to_map() {
-    $dealers = load_ffl_dealers();
+    try {
+        $dealers = load_ffl_dealers();
+    } catch (Exception $e) {
+        error_log('Error loading FFL dealers: ' . $e->getMessage());
+        return;
+    }
     $formatted_dealers = array();
 
     foreach ($dealers as $dealer) {
