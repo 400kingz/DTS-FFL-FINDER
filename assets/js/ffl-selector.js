@@ -1,6 +1,7 @@
 jQuery(document).ready(function($) {
     // Initialize Google Map
-    function initMap(dealers) {
+    window.initMap = function() {
+        var dealers = typeof fflDealers !== 'undefined' ? fflDealers : [];
         try {
             var map = new google.maps.Map(document.getElementById('ffl-dealer-map'), {
             zoom: 4,
