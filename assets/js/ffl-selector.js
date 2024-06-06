@@ -11,7 +11,7 @@ jQuery(document).ready(function($) {
         }
 
         // Add markers for each FFL dealer
-        dealers.forEach(function(dealer) {
+        (dealers || []).forEach(function(dealer) {
             var marker = new google.maps.Marker({
                 position: {lat: parseFloat(dealer.latitude), lng: parseFloat(dealer.longitude)},
                 map: map,
