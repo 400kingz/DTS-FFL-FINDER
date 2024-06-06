@@ -66,12 +66,16 @@ function load_ffl_dealers() {
     $csv_file = plugin_dir_path(__FILE__) . 'dealers.csv';
     $dealers = array();
 
-    if (($handle = fopen($csv_file, 'r')) !== FALSE) {
+    if (file_exists($csv_file) && ($handle = fopen($csv_file, 'r')) !== FALSE) {
         $header = fgetcsv($handle, 1000, ',');
         while (($data = fgetcsv($handle, 1000, ',')) !== FALSE) {
-            $dealers[] = array_combine($header, $data);
+            if (count($data) == count($header)) {
+                $dealers[] = array_combine($header, $data);
+            }
         }
         fclose($handle);
+    } else {
+        error_log('Error: CSV file not found or unable to open.');
     }
 
     return $dealers;
@@ -82,7 +86,10 @@ function geocode_zipcode($zipcode) {
     $api_key = 'AIzaSyAho6VTU5slTT2E3Ur-deTtaS36Frct9FE'; // Replace with your Google Maps API key
     $url = "https://maps.googleapis.com/maps/api/geocode/json?address={$zipcode}&key={$api_key}";
 
-    $cache = json_decode(file_get_contents(FFL_GEOCODE_CACHE), true) ?: [];
+    $cache = [];
+    if (file_exists(FFL_GEOCODE_CACHE)) {
+        $cache = json_decode(file_get_contents(FFL_GEOCODE_CACHE), true) ?: [];
+    }
     if (isset($cache[$zipcode])) {
         return $cache[$zipcode];
     }
@@ -99,7 +106,7 @@ function geocode_zipcode($zipcode) {
         $location = $data->results[0]->geometry->location;
         $geocode = array('latitude' => $location->lat, 'longitude' => $location->lng);
         $cache[$zipcode] = $geocode;
-        file_put_contents(FFL_GEOCODE_CACHE, json_encode($cache));
+        file_put_contents(FFL_GEOCODE_CACHE, json_encode($cache, JSON_PRETTY_PRINT));
         return $geocode;
     }
 
