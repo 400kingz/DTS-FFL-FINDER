@@ -63,6 +63,11 @@ add_action('woocommerce_email_customer_details', 'display_ffl_dealer_field_in_or
 
 // Load FFL dealers from CSV
 function load_ffl_dealers() {
+    static $dealers = null;
+    if ($dealers !== null) {
+        return $dealers;
+    }
+
     $csv_file = plugin_dir_path(__FILE__) . 'dealers.csv';
     $dealers = array();
 
@@ -86,10 +91,15 @@ function geocode_zipcode($zipcode) {
     $api_key = 'AIzaSyAho6VTU5slTT2E3Ur-deTtaS36Frct9FE'; // Replace with your Google Maps API key
     $url = "https://maps.googleapis.com/maps/api/geocode/json?address={$zipcode}&key={$api_key}";
 
-    $cache = [];
-    if (file_exists(FFL_GEOCODE_CACHE)) {
-        $cache = json_decode(file_get_contents(FFL_GEOCODE_CACHE), true) ?: [];
+    static $cache = null;
+    if ($cache === null) {
+        if (file_exists(FFL_GEOCODE_CACHE)) {
+            $cache = json_decode(file_get_contents(FFL_GEOCODE_CACHE), true) ?: [];
+        } else {
+            $cache = [];
+        }
     }
+
     if (isset($cache[$zipcode])) {
         return $cache[$zipcode];
     }
