@@ -12,6 +12,14 @@ define('FFL_GEOCODE_CACHE', plugin_dir_path(__FILE__) . 'geocode_cache.json');
 // Enqueue Google Maps API and custom scripts
 function enqueue_ffl_selector_scripts() {
     wp_enqueue_script('google-maps', 'https://maps.googleapis.com/maps/api/js?key=AIzaSyAho6VTU5slTT2E3Ur-deTtaS36Frct9FE&callback=initMap', array(), null, true);
+    add_filter('script_loader_tag', 'add_async_defer_attribute', 10, 2);
+
+    function add_async_defer_attribute($tag, $handle) {
+        if ('google-maps' !== $handle) {
+            return $tag;
+        }
+        return str_replace(' src', ' async defer src', $tag);
+    }
     wp_enqueue_script('ffl-selector', plugin_dir_url(__FILE__) . 'assets/js/ffl-selector.js', array('jquery', 'google-maps'), null, true);
     wp_enqueue_style('ffl-selector-style', plugin_dir_url(__FILE__) . 'assets/css/ffl-selector.css');
 }
