@@ -71,14 +71,16 @@ function load_ffl_dealers() {
     $csv_file = plugin_dir_path(__FILE__) . 'dealers.csv';
     $dealers = array();
 
-    if (file_exists($csv_file) && ($handle = fopen($csv_file, 'r')) !== FALSE) {
-        $header = fgetcsv($handle, 1000, ',');
-        while (($data = fgetcsv($handle, 1000, ',')) !== FALSE) {
+    if (file_exists($csv_file)) {
+        $csv_data = file_get_contents($csv_file);
+        $lines = explode(PHP_EOL, $csv_data);
+        $header = str_getcsv(array_shift($lines));
+        foreach ($lines as $line) {
+            $data = str_getcsv($line);
             if (count($data) == count($header)) {
                 $dealers[] = array_combine($header, $data);
             }
         }
-        fclose($handle);
     } else {
         error_log('Error: CSV file not found or unable to open.');
     }
@@ -104,23 +106,26 @@ function geocode_zipcode($zipcode) {
         return $cache[$zipcode];
     }
 
-    $response = wp_remote_get($url);
-    if (is_wp_error($response)) {
-        return false;
+    if (!isset($cache[$zipcode])) {
+        $response = wp_remote_get($url);
+        if (is_wp_error($response)) {
+            return false;
+        }
+
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body);
+
+        if ($data->status === 'OK') {
+            $location = $data->results[0]->geometry->location;
+            $geocode = array('latitude' => $location->lat, 'longitude' => $location->lng);
+            $cache[$zipcode] = $geocode;
+            file_put_contents(FFL_GEOCODE_CACHE, json_encode($cache, JSON_PRETTY_PRINT));
+        } else {
+            return false;
+        }
     }
 
-    $body = wp_remote_retrieve_body($response);
-    $data = json_decode($body);
-
-    if ($data->status === 'OK') {
-        $location = $data->results[0]->geometry->location;
-        $geocode = array('latitude' => $location->lat, 'longitude' => $location->lng);
-        $cache[$zipcode] = $geocode;
-        file_put_contents(FFL_GEOCODE_CACHE, json_encode($cache, JSON_PRETTY_PRINT));
-        return $geocode;
-    }
-
-    return false;
+    return $cache[$zipcode];
 }
 
 // Add FFL dealers to the map
