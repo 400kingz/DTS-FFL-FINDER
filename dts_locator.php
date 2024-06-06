@@ -155,7 +155,7 @@ function add_ffl_dealers_to_map() {
         }
     }
 
-    wp_localize_script('ffl-selector', 'fflDealers', $formatted_dealers);
+    wp_localize_script('ffl-selector', 'fflDealers', array('dealers' => $formatted_dealers));
 }
 add_action('wp_enqueue_scripts', 'add_ffl_dealers_to_map');
 ?>

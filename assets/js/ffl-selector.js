@@ -53,13 +53,21 @@ jQuery(document).ready(function($) {
     $('#search_ffl_dealers').on('click', function() {
         var zipcode = $('#ffl_zipcode').val();
         var radius = $('#ffl_radius').val();
-        searchDealers(zipcode, radius);
+        if (zipcode && radius) {
+            searchDealers(zipcode, radius);
+        } else {
+            alert('Please enter a valid ZIP code and select a radius.');
+        }
     });
 
     // Load Google Map with all dealers initially
     if ($('#ffl-dealer-map').length) {
         google.maps.event.addDomListener(window, 'load', function() {
-            initMap(fflDealers);
+            if (typeof fflDealers !== 'undefined') {
+                initMap(fflDealers);
+            } else {
+                console.error('FFL dealers data is not available.');
+            }
         });
     }
 });
