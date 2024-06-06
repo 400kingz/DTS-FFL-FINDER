@@ -6,7 +6,7 @@ Version: 5.0
 Author: Zain Omran
 */
 
-ini_set('memory_limit', '512M');
+ini_set('memory_limit', '1024M');
 define('FFL_GEOCODE_CACHE', plugin_dir_path(__FILE__) . 'geocode_cache.json');
 
 // Enqueue Google Maps API and custom scripts
